@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const EmpireList = ({ onSelect }) => {
 	const [empires, setEmpires] = useState([]);
-	const [filters, setFilters] = useState({ name: "" }); // Removed year filter for now
+	const [filters, setFilters] = useState({ name: "", year: "" });
 	const [loading, setLoading] = useState(false);
 	const [selectedGeoJSON, setSelectedGeoJSON] = useState(null);
 
@@ -13,7 +13,6 @@ const EmpireList = ({ onSelect }) => {
 				"http://localhost:5000/geo-json-service/get-all-empires"
 			);
 			const data = await res.json();
-			console.log(data);
 			setEmpires(data);
 		} catch (err) {
 			alert("Failed to fetch empires");
@@ -31,10 +30,24 @@ const EmpireList = ({ onSelect }) => {
 	};
 
 	const filteredEmpires = empires.filter((empire) => {
+		// Name filter (case-insensitive)
 		const nameMatch = (empire.empire_name || "")
 			.toLowerCase()
 			.includes(filters.name.toLowerCase());
-		return nameMatch;
+
+		// Year filter: convert BCE/CE to just year number (ignore era)
+		const filterYear = filters.year.trim();
+		let yearMatch = true;
+		if (filterYear !== "") {
+			// Extract year numbers only from start_year and end_year
+			const startYearNum = empire.start_year?.year ?? null;
+			const endYearNum = empire.end_year?.year ?? null;
+
+			// Check if filterYear matches either start or end year
+			yearMatch = startYearNum == filterYear || endYearNum == filterYear;
+		}
+
+		return nameMatch && yearMatch;
 	});
 
 	const handleDelete = async (objectId) => {
@@ -74,85 +87,99 @@ const EmpireList = ({ onSelect }) => {
 					onChange={handleFilterChange}
 					className="border p-2 flex-1"
 				/>
+				<input
+					type="text"
+					name="year"
+					placeholder="Filter by year"
+					value={filters.year}
+					onChange={handleFilterChange}
+					className="border p-2 flex-1"
+				/>
 			</div>
 
-			{loading ? (
-				<p>Loading...</p>
-			) : (
-				<table className="w-full text-left border">
-					<thead className="bg-gray-100">
-						<tr>
-							<th className="border px-2 py-1">Empire Name</th>
-							<th className="border px-2 py-1">Start Year</th>
-							<th className="border px-2 py-1">End Year</th>
-							<th className="border px-2 py-1">ID</th>
-							<th className="border px-2 py-1">Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{filteredEmpires.map((empire) => (
-							<tr key={empire.id} className="hover:bg-gray-50">
-								<td className="border px-2 py-1">{empire.empire_name}</td>
-								<td className="border px-2 py-1">
-									{empire.start_year?.year} {empire.start_year?.era}
-								</td>
-								<td className="border px-2 py-1">
-									{empire.end_year?.year} {empire.end_year?.era}
-								</td>
-								<td className="border px-2 py-1">{empire.object_id}</td>
-								<td className="border px-2 py-1 space-x-2">
-									<button
-										onClick={() => setSelectedGeoJSON(empire.content)}
-										className="text-blue-600 hover:underline"
-									>
-										View
-									</button>
-									<button
-										onClick={() => onSelect(empire)}
-										className="text-green-600 hover:underline"
-									>
-										Edit
-									</button>
-									<button
-										onClick={() => handleDelete(empire.object_id)}
-										className="text-red-600 hover:underline"
-									>
-										Delete
-									</button>
-								</td>
-							</tr>
-						))}
-						{filteredEmpires.length === 0 && (
-							<tr>
-								<td colSpan="5" className="text-center p-2">
-									No matching empires found.
-								</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			)}
+			<div className="flex gap-4">
+				{/* GeoJSON Viewer on the left */}
+				{selectedGeoJSON && (
+					<div className="w-1/3 p-2 border bg-gray-50 max-h-[600px] overflow-auto">
+						<h3 className="font-semibold mb-2">GeoJSON Content:</h3>
+						<pre className="text-sm bg-white p-2 border rounded">
+							{JSON.stringify(
+								typeof selectedGeoJSON === "string"
+									? JSON.parse(selectedGeoJSON)
+									: selectedGeoJSON,
+								null,
+								2
+							)}
+						</pre>
+						<button
+							onClick={() => setSelectedGeoJSON(null)}
+							className="mt-2 text-red-500 hover:underline"
+						>
+							Close
+						</button>
+					</div>
+				)}
 
-			{selectedGeoJSON && (
-				<div className="mt-4 p-2 border bg-gray-50">
-					<h3 className="font-semibold mb-2">GeoJSON Content:</h3>
-					<pre className="overflow-auto max-h-60 text-sm bg-white p-2 border rounded">
-						{JSON.stringify(
-							typeof selectedGeoJSON === "string"
-								? JSON.parse(selectedGeoJSON)
-								: selectedGeoJSON,
-							null,
-							2
-						)}
-					</pre>
-					<button
-						onClick={() => setSelectedGeoJSON(null)}
-						className="mt-2 text-red-500 hover:underline"
-					>
-						Close
-					</button>
+				{/* Empire Records Table - fill remaining width */}
+				<div className={selectedGeoJSON ? "w-2/3 overflow-auto" : "w-full"}>
+					{loading ? (
+						<p>Loading...</p>
+					) : (
+						<table className="w-full text-left border">
+							<thead className="bg-gray-100">
+								<tr>
+									<th className="border px-2 py-1">Empire Name</th>
+									<th className="border px-2 py-1">Start Year</th>
+									<th className="border px-2 py-1">End Year</th>
+									<th className="border px-2 py-1">ID</th>
+									<th className="border px-2 py-1">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{filteredEmpires.map((empire) => (
+									<tr key={empire.id} className="hover:bg-gray-50">
+										<td className="border px-2 py-1">{empire.empire_name}</td>
+										<td className="border px-2 py-1">
+											{empire.start_year?.year} {empire.start_year?.era}
+										</td>
+										<td className="border px-2 py-1">
+											{empire.end_year?.year} {empire.end_year?.era}
+										</td>
+										<td className="border px-2 py-1">{empire.object_id}</td>
+										<td className="border px-2 py-1 space-x-2">
+											<button
+												onClick={() => setSelectedGeoJSON(empire.content)}
+												className="text-blue-600 hover:underline"
+											>
+												View
+											</button>
+											<button
+												onClick={() => onSelect(empire)}
+												className="text-green-600 hover:underline"
+											>
+												Edit
+											</button>
+											<button
+												onClick={() => handleDelete(empire.object_id)}
+												className="text-red-600 hover:underline"
+											>
+												Delete
+											</button>
+										</td>
+									</tr>
+								))}
+								{filteredEmpires.length === 0 && (
+									<tr>
+										<td colSpan="5" className="text-center p-2">
+											No matching empires found.
+										</td>
+									</tr>
+								)}
+							</tbody>
+						</table>
+					)}
 				</div>
-			)}
+			</div>
 		</div>
 	);
 };
