@@ -75,7 +75,7 @@ const EmpireList = ({ onSelect }) => {
 	};
 
 	return (
-		<div className="p-4 border rounded-lg shadow">
+		<div className=" ">
 			<h2 className="text-xl font-semibold mb-4">Empire Records</h2>
 
 			<div className="flex gap-4 mb-4">
@@ -100,7 +100,7 @@ const EmpireList = ({ onSelect }) => {
 			<div className="flex gap-4">
 				{/* GeoJSON Viewer on the left */}
 				{selectedGeoJSON && (
-					<div className="w-1/3 p-2 border bg-gray-50 max-h-[600px] overflow-auto">
+					<div className="w-1/2 p-2 border bg-gray-50 max-h-[600px] overflow-auto">
 						<h3 className="font-semibold mb-2">GeoJSON Content:</h3>
 						<pre className="text-sm bg-white p-2 border rounded">
 							{JSON.stringify(
@@ -121,7 +121,7 @@ const EmpireList = ({ onSelect }) => {
 				)}
 
 				{/* Empire Records Table - fill remaining width */}
-				<div className={selectedGeoJSON ? "w-2/3 overflow-auto" : "w-full"}>
+				<div className={selectedGeoJSON ? "w-1/2 overflow-auto" : "w-full"}>
 					{loading ? (
 						<p>Loading...</p>
 					) : (
