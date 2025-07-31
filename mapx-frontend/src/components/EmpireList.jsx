@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 const EmpireList = ({ onSelect }) => {
 	const [empires, setEmpires] = useState([]);
@@ -35,15 +36,13 @@ const EmpireList = ({ onSelect }) => {
 			.toLowerCase()
 			.includes(filters.name.toLowerCase());
 
-		// Year filter: convert BCE/CE to just year number (ignore era)
+		// Year filter: ignore BCE/CE era, match year number only
 		const filterYear = filters.year.trim();
 		let yearMatch = true;
 		if (filterYear !== "") {
-			// Extract year numbers only from start_year and end_year
 			const startYearNum = empire.start_year?.year ?? null;
 			const endYearNum = empire.end_year?.year ?? null;
 
-			// Check if filterYear matches either start or end year
 			yearMatch = startYearNum == filterYear || endYearNum == filterYear;
 		}
 
@@ -75,7 +74,7 @@ const EmpireList = ({ onSelect }) => {
 	};
 
 	return (
-		<div className=" ">
+		<div className="">
 			<h2 className="text-xl font-semibold mb-4">Empire Records</h2>
 
 			<div className="flex gap-4 mb-4">
@@ -100,9 +99,18 @@ const EmpireList = ({ onSelect }) => {
 			<div className="flex gap-4">
 				{/* GeoJSON Viewer on the left */}
 				{selectedGeoJSON && (
-					<div className="w-1/2 p-2 border bg-gray-50 max-h-[600px] overflow-auto">
+					<div className="w-1/2 p-2 border bg-gray-50 max-h-[600px] overflow-auto flex flex-col">
+						<div className="flex justify-end mb-2">
+							<button
+								onClick={() => setSelectedGeoJSON(null)}
+								className="text-red-500 hover:underline"
+							>
+								Close
+							</button>
+						</div>
+
 						<h3 className="font-semibold mb-2">GeoJSON Content:</h3>
-						<pre className="text-sm bg-white p-2 border rounded">
+						<pre className="text-sm bg-white p-2 border rounded flex-1 overflow-auto">
 							{JSON.stringify(
 								typeof selectedGeoJSON === "string"
 									? JSON.parse(selectedGeoJSON)
@@ -111,12 +119,6 @@ const EmpireList = ({ onSelect }) => {
 								2
 							)}
 						</pre>
-						<button
-							onClick={() => setSelectedGeoJSON(null)}
-							className="mt-2 text-red-500 hover:underline"
-						>
-							Close
-						</button>
 					</div>
 				)}
 
@@ -153,12 +155,14 @@ const EmpireList = ({ onSelect }) => {
 											>
 												View
 											</button>
-											<button
-												onClick={() => onSelect(empire)}
-												className="text-green-600 hover:underline"
-											>
-												Edit
-											</button>
+											<Link to="*">
+												<button
+													onClick={() => onSelect(empire)}
+													className="text-green-600 hover:underline"
+												>
+													Edit
+												</button>
+											</Link>
 											<button
 												onClick={() => handleDelete(empire.object_id)}
 												className="text-red-600 hover:underline"
