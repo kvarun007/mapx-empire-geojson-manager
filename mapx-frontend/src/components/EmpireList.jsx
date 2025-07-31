@@ -1,13 +1,11 @@
-// src/components/EmpireList.jsx
 import React, { useEffect, useState } from "react";
 
 const EmpireList = ({ onSelect }) => {
 	const [empires, setEmpires] = useState([]);
-	const [filters, setFilters] = useState({ name: "", year: "" });
+	const [filters, setFilters] = useState({ name: "" }); // Removed year filter for now
 	const [loading, setLoading] = useState(false);
 	const [selectedGeoJSON, setSelectedGeoJSON] = useState(null);
 
-	// Fetch empire records from backend
 	const fetchEmpires = async () => {
 		setLoading(true);
 		try {
@@ -15,7 +13,7 @@ const EmpireList = ({ onSelect }) => {
 				"http://localhost:5000/geo-json-service/get-all-empires"
 			);
 			const data = await res.json();
-			// console.log(data);
+			console.log(data);
 			setEmpires(data);
 		} catch (err) {
 			alert("Failed to fetch empires");
@@ -27,24 +25,18 @@ const EmpireList = ({ onSelect }) => {
 		fetchEmpires();
 	}, []);
 
-	// Handle filter change
 	const handleFilterChange = (e) => {
 		const { name, value } = e.target;
 		setFilters((prev) => ({ ...prev, [name]: value }));
 	};
 
-	// Apply filters
 	const filteredEmpires = empires.filter((empire) => {
 		const nameMatch = (empire.empire_name || "")
 			.toLowerCase()
 			.includes(filters.name.toLowerCase());
-		const year = parseInt(filters.year);
-		const yearMatch =
-			!filters.year || (empire.start_year <= year && empire.end_year >= year);
-		return nameMatch && yearMatch;
+		return nameMatch;
 	});
 
-	//delete records
 	const handleDelete = async (objectId) => {
 		const confirm = window.confirm(
 			"Are you sure you want to delete this empire?"
@@ -62,7 +54,6 @@ const EmpireList = ({ onSelect }) => {
 			const result = await res.json();
 			alert(result.status || "Empire deleted successfully!");
 
-			// Refresh the list
 			fetchEmpires();
 		} catch (err) {
 			console.error("Delete error:", err);
@@ -80,14 +71,6 @@ const EmpireList = ({ onSelect }) => {
 					name="name"
 					placeholder="Filter by name"
 					value={filters.name}
-					onChange={handleFilterChange}
-					className="border p-2 flex-1"
-				/>
-				<input
-					type="number"
-					name="year"
-					placeholder="Filter by year"
-					value={filters.year}
 					onChange={handleFilterChange}
 					className="border p-2 flex-1"
 				/>
@@ -110,8 +93,12 @@ const EmpireList = ({ onSelect }) => {
 						{filteredEmpires.map((empire) => (
 							<tr key={empire.id} className="hover:bg-gray-50">
 								<td className="border px-2 py-1">{empire.empire_name}</td>
-								<td className="border px-2 py-1">{empire.start_year}</td>
-								<td className="border px-2 py-1">{empire.end_year}</td>
+								<td className="border px-2 py-1">
+									{empire.start_year?.year} {empire.start_year?.era}
+								</td>
+								<td className="border px-2 py-1">
+									{empire.end_year?.year} {empire.end_year?.era}
+								</td>
 								<td className="border px-2 py-1">{empire.object_id}</td>
 								<td className="border px-2 py-1 space-x-2">
 									<button
@@ -146,7 +133,6 @@ const EmpireList = ({ onSelect }) => {
 				</table>
 			)}
 
-			{/* Read-only GeoJSON Viewer */}
 			{selectedGeoJSON && (
 				<div className="mt-4 p-2 border bg-gray-50">
 					<h3 className="font-semibold mb-2">GeoJSON Content:</h3>

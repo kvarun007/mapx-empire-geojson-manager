@@ -1,41 +1,47 @@
 import React, { useState, useEffect } from "react";
 
 function EmpireForm({ onSubmit, isEditing = false, initialData }) {
-	// States
 	const [empireName, setEmpireName] = useState("");
-	const [startYear, setStartYear] = useState("");
-	const [endYear, setEndYear] = useState("");
+	const [startYear, setStartYear] = useState({ year: "", era: "BCE" });
+	const [endYear, setEndYear] = useState({ year: "", era: "BCE" });
 	const [content, setContent] = useState("");
 	const [error, setError] = useState("");
 
-	// ✅ Sync form values when editing is triggered
 	useEffect(() => {
 		if (isEditing && initialData) {
 			setEmpireName(initialData.empire_name || "");
-			setStartYear(initialData.start_year || "");
-			setEndYear(initialData.end_year || "");
+			setStartYear({
+				year: initialData.start_year?.year || "",
+				era: initialData.start_year?.era || "BCE",
+			});
+			setEndYear({
+				year: initialData.end_year?.year || "",
+				era: initialData.end_year?.era || "BCE",
+			});
 			setContent(
 				initialData.content ? JSON.stringify(initialData.content, null, 2) : ""
 			);
 		}
 	}, [initialData, isEditing]);
 
-	// Handle input changes
 	const handleInputChange = (e) => {
 		const { name, value } = e.target;
 
 		if (name === "empire_name") {
 			setEmpireName(value);
 		} else if (name === "start_year") {
-			setStartYear(value);
+			setStartYear((prev) => ({ ...prev, year: value }));
+		} else if (name === "start_era") {
+			setStartYear((prev) => ({ ...prev, era: value }));
 		} else if (name === "end_year") {
-			setEndYear(value);
+			setEndYear((prev) => ({ ...prev, year: value }));
+		} else if (name === "end_era") {
+			setEndYear((prev) => ({ ...prev, era: value }));
 		} else if (name === "content") {
 			setContent(value);
 		}
 	};
 
-	// Handle file upload
 	const handleFileUpload = (e) => {
 		const file = e.target.files[0];
 		if (!file) return;
@@ -47,12 +53,17 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 		reader.readAsText(file);
 	};
 
-	// Handle form submission
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
-		// Basic validation
-		if (!empireName || !startYear || !endYear || !content) {
+		if (
+			!empireName ||
+			!startYear.year ||
+			!endYear.year ||
+			!startYear.era ||
+			!endYear.era ||
+			!content
+		) {
 			setError("Please fill in all fields");
 			return;
 		}
@@ -69,8 +80,8 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 
 		const formData = {
 			empire_name: empireName,
-			start_year: parseInt(startYear),
-			end_year: parseInt(endYear),
+			start_year: { year: parseInt(startYear.year), era: startYear.era },
+			end_year: { year: parseInt(endYear.year), era: endYear.era },
 			content: parsedContent,
 		};
 
@@ -82,24 +93,21 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 					{
 						method: "PUT",
 						headers: { "Content-Type": "application/json" },
-
 						body: JSON.stringify({
 							...formData,
 							object_id: initialData.object_id,
 						}),
 					}
 				);
-
 				const result = await res.json();
 				alert(result.status || "Empire updated successfully!");
 			} else {
 				onSubmit(formData);
 			}
 
-			// Reset form
 			setEmpireName("");
-			setStartYear("");
-			setEndYear("");
+			setStartYear({ year: "", era: "BCE" });
+			setEndYear({ year: "", era: "BCE" });
 			setContent("");
 		} catch (err) {
 			console.error("Submission error:", err);
@@ -133,25 +141,47 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 			<div className="flex gap-4">
 				<div className="w-1/2">
 					<label className="block text-sm font-medium">Start Year</label>
-					<input
-						type="number"
-						name="start_year"
-						value={startYear}
-						onChange={handleInputChange}
-						className="w-full mt-1 border border-gray-300 rounded p-2"
-						required
-					/>
+					<div className="flex gap-2">
+						<input
+							type="number"
+							name="start_year"
+							value={startYear.year}
+							onChange={handleInputChange}
+							className="w-2/3 mt-1 border border-gray-300 rounded p-2"
+							required
+						/>
+						<select
+							name="start_era"
+							value={startYear.era}
+							onChange={handleInputChange}
+							className="w-1/3 mt-1 border border-gray-300 rounded p-2"
+						>
+							<option value="BCE">BCE</option>
+							<option value="CE">CE</option>
+						</select>
+					</div>
 				</div>
 				<div className="w-1/2">
 					<label className="block text-sm font-medium">End Year</label>
-					<input
-						type="number"
-						name="end_year"
-						value={endYear}
-						onChange={handleInputChange}
-						className="w-full mt-1 border border-gray-300 rounded p-2"
-						required
-					/>
+					<div className="flex gap-2">
+						<input
+							type="number"
+							name="end_year"
+							value={endYear.year}
+							onChange={handleInputChange}
+							className="w-2/3 mt-1 border border-gray-300 rounded p-2"
+							required
+						/>
+						<select
+							name="end_era"
+							value={endYear.era}
+							onChange={handleInputChange}
+							className="w-1/3 mt-1 border border-gray-300 rounded p-2"
+						>
+							<option value="BCE">BCE</option>
+							<option value="CE">CE</option>
+						</select>
+					</div>
 				</div>
 			</div>
 
