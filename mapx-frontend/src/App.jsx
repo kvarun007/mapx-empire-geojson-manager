@@ -7,19 +7,17 @@ import EmpireList from "./components/EmpireList";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 function App() {
+	const baseUrl = import.meta.env.VITE_API_BASE_URL;
 	const handleFormSubmit = async (data) => {
 		console.log("Form submitted with:", data);
 		try {
-			const response = await fetch(
-				"http://localhost:5000/geo-json-service/upload",
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify(data),
-				}
-			);
+			const response = await fetch(`${baseUrl}/geo-json-service/upload`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(data),
+			});
 
 			const result = await response.json();
 			console.log("Server response:", result);

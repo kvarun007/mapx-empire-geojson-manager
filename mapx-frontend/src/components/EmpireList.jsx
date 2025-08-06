@@ -3,16 +3,16 @@ import { Link } from "react-router-dom";
 
 const EmpireList = ({ onSelect }) => {
 	const [empires, setEmpires] = useState([]);
-	const [filters, setFilters] = useState({ name: "", year: "" });
+	const [filters, setFilters] = useState({ name: "", year: "", era: "" });
 	const [loading, setLoading] = useState(false);
 	const [selectedGeoJSON, setSelectedGeoJSON] = useState(null);
+
+	const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 	const fetchEmpires = async () => {
 		setLoading(true);
 		try {
-			const res = await fetch(
-				"http://localhost:5000/geo-json-service/get-all-empires"
-			);
+			const res = await fetch(`${baseUrl}/geo-json-service/get-all-empires`);
 			const data = await res.json();
 			setEmpires(data);
 		} catch (err) {
@@ -31,22 +31,27 @@ const EmpireList = ({ onSelect }) => {
 	};
 
 	const filteredEmpires = empires.filter((empire) => {
-		// Name filter (case-insensitive)
 		const nameMatch = (empire.empire_name || "")
 			.toLowerCase()
 			.includes(filters.name.toLowerCase());
 
-		// Year filter: ignore BCE/CE era, match year number only
 		const filterYear = filters.year.trim();
 		let yearMatch = true;
 		if (filterYear !== "") {
 			const startYearNum = empire.start_year?.year ?? null;
 			const endYearNum = empire.end_year?.year ?? null;
-
 			yearMatch = startYearNum == filterYear || endYearNum == filterYear;
 		}
 
-		return nameMatch && yearMatch;
+		const filterEra = filters.era.trim();
+		let eraMatch = true;
+		if (filterEra !== "") {
+			const startEra = empire.start_year?.era ?? "";
+			const endEra = empire.end_year?.era ?? "";
+			eraMatch = startEra === filterEra || endEra === filterEra;
+		}
+
+		return nameMatch && yearMatch && eraMatch;
 	});
 
 	const handleDelete = async (objectId) => {
@@ -57,15 +62,13 @@ const EmpireList = ({ onSelect }) => {
 
 		try {
 			const res = await fetch(
-				`http://localhost:5000/geo-json-service/delete/${objectId}`,
+				`${baseUrl}/geo-json-service/delete/${objectId}`,
 				{
 					method: "DELETE",
 				}
 			);
-
 			const result = await res.json();
 			alert(result.status || "Empire deleted successfully!");
-
 			fetchEmpires();
 		} catch (err) {
 			console.error("Delete error:", err);
@@ -74,17 +77,18 @@ const EmpireList = ({ onSelect }) => {
 	};
 
 	return (
-		<div className="">
+		<div>
 			<h2 className="text-xl font-semibold mb-4">Empire Records</h2>
 
-			<div className="flex gap-4 mb-4">
+			{/* Filters */}
+			<div className="flex gap-4 mb-4 flex-wrap">
 				<input
 					type="text"
 					name="name"
 					placeholder="Filter by name"
 					value={filters.name}
 					onChange={handleFilterChange}
-					className="border p-2 flex-1"
+					className="border p-2 flex-1 min-w-[150px]"
 				/>
 				<input
 					type="text"
@@ -92,12 +96,23 @@ const EmpireList = ({ onSelect }) => {
 					placeholder="Filter by year"
 					value={filters.year}
 					onChange={handleFilterChange}
-					className="border p-2 flex-1"
+					className="border p-2 flex-1 min-w-[150px]"
 				/>
+				<select
+					name="era"
+					value={filters.era}
+					onChange={handleFilterChange}
+					className="border p-2 min-w-[150px]"
+				>
+					<option value="">All Eras</option>
+					<option value="BCE">BCE</option>
+					<option value="CE">CE</option>
+				</select>
 			</div>
 
+			{/* Layout: Viewer on Left, Table on Right */}
 			<div className="flex gap-4">
-				{/* GeoJSON Viewer on the left */}
+				{/* GeoJSON Viewer */}
 				{selectedGeoJSON && (
 					<div className="w-1/2 p-2 border bg-gray-50 max-h-[600px] overflow-auto flex flex-col">
 						<div className="flex justify-end mb-2">
@@ -108,7 +123,6 @@ const EmpireList = ({ onSelect }) => {
 								Close
 							</button>
 						</div>
-
 						<h3 className="font-semibold mb-2">GeoJSON Content:</h3>
 						<pre className="text-sm bg-white p-2 border rounded flex-1 overflow-auto">
 							{JSON.stringify(
@@ -122,7 +136,7 @@ const EmpireList = ({ onSelect }) => {
 					</div>
 				)}
 
-				{/* Empire Records Table - fill remaining width */}
+				{/* Empire Table */}
 				<div className={selectedGeoJSON ? "w-1/2 overflow-auto" : "w-full"}>
 					{loading ? (
 						<p>Loading...</p>
@@ -155,7 +169,7 @@ const EmpireList = ({ onSelect }) => {
 											>
 												View
 											</button>
-											<Link to="*">
+											<Link to="/form">
 												<button
 													onClick={() => onSelect(empire)}
 													className="text-green-600 hover:underline"

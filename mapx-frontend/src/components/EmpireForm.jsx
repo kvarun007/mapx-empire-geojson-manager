@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 
 function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 	const [empireName, setEmpireName] = useState("");
@@ -6,6 +7,9 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 	const [endYear, setEndYear] = useState({ year: "", era: "BCE" });
 	const [content, setContent] = useState("");
 	const [error, setError] = useState("");
+
+	const baseUrl = import.meta.env.VITE_API_BASE_URL;
+	const fileInputRef = useRef(null);
 
 	useEffect(() => {
 		if (isEditing && initialData) {
@@ -88,17 +92,14 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 		try {
 			console.log(formData);
 			if (isEditing && initialData?.object_id) {
-				const res = await fetch(
-					"http://localhost:5000/geo-json-service/update",
-					{
-						method: "PUT",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({
-							...formData,
-							object_id: initialData.object_id,
-						}),
-					}
-				);
+				const res = await fetch(`${baseUrl}/geo-json-service/update`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						...formData,
+						object_id: initialData.object_id,
+					}),
+				});
 				const result = await res.json();
 				alert(result.status || "Empire updated successfully!");
 			} else {
@@ -109,6 +110,10 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 			setStartYear({ year: "", era: "BCE" });
 			setEndYear({ year: "", era: "BCE" });
 			setContent("");
+
+			if (fileInputRef.current) {
+				fileInputRef.current.value = "";
+			}
 		} catch (err) {
 			console.error("Submission error:", err);
 			setError("Error submitting form. Please check console.");
@@ -195,12 +200,19 @@ function EmpireForm({ onSubmit, isEditing = false, initialData }) {
 					placeholder="Paste raw GeoJSON content here..."
 					className="w-full mt-1 border border-gray-300 rounded p-2 font-mono text-sm"
 				/>
-				<input
-					type="file"
-					accept=".json,.geojson"
-					onChange={handleFileUpload}
-					className="mt-2"
-				/>
+
+				<div className="mt-2">
+					<label className="inline-block bg-gray-200 text-gray-700 px-4 py-2 rounded cursor-pointer hover:bg-gray-300">
+						Choose File
+						<input
+							type="file"
+							accept=".json,.geojson"
+							onChange={handleFileUpload}
+							ref={fileInputRef}
+							className="hidden"
+						/>
+					</label>
+				</div>
 			</div>
 
 			<button
